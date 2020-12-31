@@ -1,0 +1,6 @@
+.grid {
+  display: inline-block;
+  border-top: 1px solid #88f;
+  border-left: 1px solid #88f;
+  margin: 100px 0 0;
+}

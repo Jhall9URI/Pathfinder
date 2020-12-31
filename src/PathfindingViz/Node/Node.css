@@ -1,0 +1,30 @@
+.node {
+  display: inline-block;
+  width: 25px;
+  height: 25px;
+  background-color: #eee;
+  border-right: 1px solid #88f;
+  border-bottom: 1px solid #88f;
+  font-size: 10px;
+  line-height: 25px;
+  vertical-align: top;
+}
+
+.wallNode {
+  background-color: black;
+}
+
+.node-visited {
+  background-color: cyan;
+}
+
+.node-shortest-path {
+  background-color: yellowgreen;
+}
+.startNode {
+  background-color: green !important;
+}
+
+.endNode {
+  background-color: red !important;
+}
