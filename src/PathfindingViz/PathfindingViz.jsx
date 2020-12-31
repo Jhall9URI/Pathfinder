@@ -6,6 +6,7 @@ import './PathfindingViz.css';
 
 const NUM_ROWS = 15;
 const NUM_COLS = 50;
+const ANIMATE_TIME_MS = 10;
 
 export default class PathfindingViz extends Component {
   constructor(props)
@@ -15,23 +16,22 @@ export default class PathfindingViz extends Component {
       nodes: [],
       start: null,
       end: null,
-    };
+    }
+    this.refGrid = [];
   }
 
   updateWall(row, col)
   {
-    const node = this.state.nodes[row][col];
-    console.log(`clicked on node ${row} ${col}`);
-    node.isWall=true;
-    this.setState(this.state.nodes);
+    const node = this.refGrid[row][col];
+    node.toggleWall();
   }
 
   visualizeDFS() 
   {
     const {nodes, start, end} = this.state;
 
-    const visited = dfs(nodes, start, end);
-    let shortestPath = getShortestPath(start,end)
+    const visited = dfs(nodes, this.refGrid, start, end);
+    let shortestPath = this.getPath(start,end)
     animatePath(visited, shortestPath);
   }
 
@@ -39,9 +39,23 @@ export default class PathfindingViz extends Component {
   {
     const {nodes, start, end} = this.state;
 
-    const visited = bfs(nodes, start, end);
-    let shortestPath = getShortestPath(start, end);
+    const visited = bfs(nodes, this.refGrid, start, end);
+    let shortestPath = this.getPath(start, end);
     animatePath(visited, shortestPath);
+  }
+  
+  getPath(start, end)
+  {
+    let shortestPath = [];
+    let curr = end;
+    
+    while (curr !== null && curr != start)
+    {
+      shortestPath.unshift(this.refGrid[curr.row][curr.col]);
+      curr = curr.prevNode;
+    }
+
+    return shortestPath
   }
 
   componentDidMount()
@@ -49,13 +63,17 @@ export default class PathfindingViz extends Component {
     const nodes  = [];
     for (let row = 0; row < NUM_ROWS; row++)
     {
-      const currRow = []
+      const currRow = [];
+      const refRow = [];
       for (let col = 0; col < NUM_COLS; col++)
       {
         const nodeInfo = createNode(row, col);
         currRow.push(nodeInfo);
+        refRow.push(null);
       }
       nodes.push(currRow);
+      this.refGrid.push(refRow);
+
     }
     let {start, end} = setStartEnd(nodes);
     this.setState({nodes, start, end});
@@ -68,10 +86,11 @@ export default class PathfindingViz extends Component {
     {
       for(let j = 0; j < nodes[i].length; j++)
       {
-        nodes[i][j].isvisited = false;
+        nodes[i][j].isVisited = false;
+        nodes[i][j].prevNode = null;
+        this.refGrid[i][j].resetNode();
       }
     }
-
     this.setState(nodes)
   }
 
@@ -96,7 +115,8 @@ export default class PathfindingViz extends Component {
                 {row.map((node, nodeIdx) => {
                   const {row, col, isStart, isEnd, isWall} = node;
                   return (
-                    <Node 
+                    <Node
+                      ref={(ref) => this.refGrid[rowIdx][nodeIdx] = ref}
                       key={nodeIdx}
                       row={row}
                       col={col}
@@ -151,42 +171,25 @@ function setStartEnd(grid)
 
 function animatePath(nodeOrder, shortestPath)
 {
-  for (let i = 1; i <= nodeOrder.length; i++)
-  {
-    if (i === nodeOrder.length)
-    {
-      //we are done with teh first node order, now animate the shortest path (if any);
-      setTimeout(() => {
-        for (let j = 0; j < shortestPath.length; j++)
-        {
-          setTimeout(() => {
-            const node  = shortestPath[j];
-            document.getElementById(`node-${node.row}-${node.col}`).className = `node node-shortest-path`;
-          }, 40*j)
-        }
-      }, 40*i)
-    }
-    else
-    {
-      setTimeout(() => {
-        const node = nodeOrder[i];
-        document.getElementById(`node-${node.row}-${node.col}`).className = `node node-visited`;
-      }, 40 * i)
-    }
-  }
-}
 
-function getShortestPath(start, end)
-{
-  let shortestPath = [];
-  let curr = end;
-  
-  while (curr !== null)
+  //schedule the animation for the node order
+  for (let i = 0; i < nodeOrder.length; i++)
   {
-    shortestPath.unshift(curr);
-    curr = curr.prevNode;
+    setTimeout(() => {
+      const node = nodeOrder[i].state;
+      node.isVisited = true;
+      nodeOrder[i].setState(node);
+    }, ANIMATE_TIME_MS * i)
   }
 
-  console.log(shortestPath)
-  return shortestPath
+  //set the animation for the shortest path 
+  //schedule its animations for only after nodeOrder is done
+  for (let j = 0; j < shortestPath.length; j++)
+  {
+    setTimeout(() => {
+      const node = shortestPath[j].state;
+      node.isShortestPath = true;
+      shortestPath[j].setState(node);
+    }, ANIMATE_TIME_MS * (j + nodeOrder.length))
+  }
 }
