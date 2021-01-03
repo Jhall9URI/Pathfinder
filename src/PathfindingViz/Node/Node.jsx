@@ -32,9 +32,18 @@ export default class Node extends Component
         this.setState(node);
     }
 
+    clearWall()
+    {
+        let node = this.state;
+        if (node.isWall)
+        {
+            node.isWall = false;
+            this.setState(node);
+        }
+    }
+
     render() 
     {
-        console.log("node render")
         const {row, col, onClick} = this.props;
         let extraClassName = '';
         if (this.state.isStart)

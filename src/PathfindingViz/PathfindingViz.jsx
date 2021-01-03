@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import Node from './Node/Node'
 import {bfs} from '../algorithms/bfs';
 import {dfs} from '../algorithms/dfs';
+import {recDiv} from '../algorithms/recursiveDivision';
 import './PathfindingViz.css';
 
 const NUM_ROWS = 15;
@@ -94,11 +95,60 @@ export default class PathfindingViz extends Component {
     this.setState(nodes)
   }
 
+  createMaze()
+  {
+    //clear all walls before creating maze
+    this.clearWalls();
+
+    //create recursive divison function for grid
+ 
+    recDiv(this.refGrid, 0, this.refGrid.length-1, 0, this.refGrid[0].length-1);
+
+    //ensure that start/end haven't been blocked in: 
+      //if start or end have btoh and odd row and even row
+      //ensure that the block above it will not have a wall
+    if (this.state.start.row % 2 === 1 && this.state.start.col % 2 === 1)
+    {
+      let aboveNode = this.refGrid[this.state.start.row-1][this.state.start.col];
+      let state = aboveNode.state;
+      state.isWall = false;
+      aboveNode.setState(state);
+    }
+
+    if (this.state.end.row % 2 === 1 && this.state.end.col % 2 === 1)
+    {
+      let aboveNode = this.refGrid[this.state.end.row-1][this.state.end.col];
+      let state = aboveNode.state;
+      state.isWall = false;
+      aboveNode.setState(state);
+    }
+
+
+  }
+  clearWalls()
+  {
+    for (let i = 0; i < this.refGrid.length; i++)
+    {
+      for (let j = 0; j < this.refGrid[i].length; j++)
+      {
+        let node = this.refGrid[i][j];
+        if (node.state.isWall)
+          node.toggleWall();
+      }
+    }
+  }
+
   render() 
   {
     const {nodes} = this.state;
     return (
       <>
+        <button onClick={() => this.createMaze()}>
+          Create Maze
+        </button>
+        <button onClick={() => this.clearWalls()}>
+          Clear All Walls
+        </button>
         <button onClick={() => this.resetGraph()}>
           Reset Graph
         </button>
