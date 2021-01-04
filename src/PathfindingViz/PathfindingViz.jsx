@@ -7,50 +7,59 @@ import './PathfindingViz.css';
 
 const NUM_ROWS = 15;
 const NUM_COLS = 50;
-const ANIMATE_TIME_MS = 10;
+const ANIMATE_TIME_MS = 30;
 
 export default class PathfindingViz extends Component {
   constructor(props)
   {
     super(props);
     this.state = {
+      status: "ready",
       nodes: [],
       start: null,
       end: null,
     }
+
+    //might be able to include this in state?
     this.refGrid = [];
   }
 
   updateWall(row, col)
   {
-    const node = this.refGrid[row][col];
-    node.toggleWall();
+    //note that this might not always work due to 
+    //setState() being asynchronous
+    if (this.state.status !== "running")
+    {
+      this.refGrid[row][col].toggleWall();
+    }
   }
 
-  visualizeDFS() 
+  visualize(algo)
   {
+    this.resetGraph();
+
     const {nodes, start, end} = this.state;
+    let visited;
+    if (algo === "bfs")
+      visited = bfs(nodes, this.refGrid, start, end);
+    else if (algo === "dfs")
+      visited = dfs(nodes, this.refGrid, start, end);
 
-    const visited = dfs(nodes, this.refGrid, start, end);
-    let shortestPath = this.getPath(start,end)
+    let shortestPath = this.getPath(start, end)
+    this.setState({status: "running"});
+
     animatePath(visited, shortestPath);
-  }
 
-  visualizeBFS() 
-  {
-    const {nodes, start, end} = this.state;
-
-    const visited = bfs(nodes, this.refGrid, start, end);
-    let shortestPath = this.getPath(start, end);
-    animatePath(visited, shortestPath);
+    setTimeout(() => {
+      this.setState({status: "ready"});
+    }, ANIMATE_TIME_MS * (visited.length + shortestPath.length + 2));
   }
   
   getPath(start, end)
   {
     let shortestPath = [];
     let curr = end;
-    
-    while (curr !== null && curr != start)
+    while (curr !== null && curr !== start)
     {
       shortestPath.unshift(this.refGrid[curr.row][curr.col]);
       curr = curr.prevNode;
@@ -92,48 +101,39 @@ export default class PathfindingViz extends Component {
         this.refGrid[i][j].resetNode();
       }
     }
-    this.setState(nodes)
+    this.setState({nodes, status: "ready"});
   }
 
   createMaze()
   {
     //clear all walls before creating maze
     this.clearWalls();
+    this.resetGraph();
+    this.setState({status: "ready"});
 
     //create recursive divison function for grid
- 
     recDiv(this.refGrid, 0, this.refGrid.length-1, 0, this.refGrid[0].length-1);
 
-    //ensure that start/end haven't been blocked in: 
-      //if start or end have btoh and odd row and even row
-      //ensure that the block above it will not have a wall
     if (this.state.start.row % 2 === 1 && this.state.start.col % 2 === 1)
     {
       let aboveNode = this.refGrid[this.state.start.row-1][this.state.start.col];
-      let state = aboveNode.state;
-      state.isWall = false;
-      aboveNode.setState(state);
+      aboveNode.clearWall();
     }
 
     if (this.state.end.row % 2 === 1 && this.state.end.col % 2 === 1)
     {
       let aboveNode = this.refGrid[this.state.end.row-1][this.state.end.col];
-      let state = aboveNode.state;
-      state.isWall = false;
-      aboveNode.setState(state);
+      aboveNode.clearWall();
     }
-
-
   }
+
   clearWalls()
   {
     for (let i = 0; i < this.refGrid.length; i++)
     {
       for (let j = 0; j < this.refGrid[i].length; j++)
       {
-        let node = this.refGrid[i][j];
-        if (node.state.isWall)
-          node.toggleWall();
+        this.refGrid[i][j].clearWall();
       }
     }
   }
@@ -143,19 +143,19 @@ export default class PathfindingViz extends Component {
     const {nodes} = this.state;
     return (
       <>
-        <button onClick={() => this.createMaze()}>
+        <button disabled={this.state.status==="running"} onClick={() => this.createMaze()}>
           Create Maze
         </button>
-        <button onClick={() => this.clearWalls()}>
+        <button disabled={this.state.status==="running"} onClick={() => this.clearWalls()}>
           Clear All Walls
         </button>
-        <button onClick={() => this.resetGraph()}>
+        <button disabled={this.state.status==="running"} onClick={() => this.resetGraph()}>
           Reset Graph
         </button>
-        <button onClick={() => this.visualizeBFS()}>
+        <button disabled={this.state.status==="running"} onClick={() => this.visualize("bfs")}>
           Visualize BFS
         </button>
-        <button onClick={() => this.visualizeDFS()}>
+        <button disabled={this.state.status==="running"} onClick={() => this.visualize("dfs")}>
           Visualize DFS
         </button>
         <div className='grid'>
@@ -226,9 +226,7 @@ function animatePath(nodeOrder, shortestPath)
   for (let i = 0; i < nodeOrder.length; i++)
   {
     setTimeout(() => {
-      const node = nodeOrder[i].state;
-      node.isVisited = true;
-      nodeOrder[i].setState(node);
+      nodeOrder[i].setState({isVisited: true});
     }, ANIMATE_TIME_MS * i)
   }
 
@@ -237,9 +235,7 @@ function animatePath(nodeOrder, shortestPath)
   for (let j = 0; j < shortestPath.length; j++)
   {
     setTimeout(() => {
-      const node = shortestPath[j].state;
-      node.isShortestPath = true;
-      shortestPath[j].setState(node);
+      shortestPath[j].setState({isShortestPath: true});
     }, ANIMATE_TIME_MS * (j + nodeOrder.length))
   }
 }

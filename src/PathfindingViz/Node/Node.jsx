@@ -16,30 +16,29 @@ export default class Node extends Component
         };
     }
 
+    createWall()
+    {
+        this.setState(function(state, props)  {
+            return {isWall: !state.isStart && !state.isEnd}
+        })
+    }
+
     toggleWall()
     {
-        let newState = this.state;
-        newState.isWall = !(this.state.isWall)
-        this.setState(newState);
+        this.setState(function(state, props) {
+            return {isWall: !state.isStart && !state.isEnd && !state.isWall}
+        })
     }
     
     //removes any of the states form 
     resetNode()
     {
-        let node = this.state;
-        node.isShortestPath = false;
-        node.isVisited = false;
-        this.setState(node);
+        this.setState({isShortestPath: false, isVisited: false});
     }
 
     clearWall()
     {
-        let node = this.state;
-        if (node.isWall)
-        {
-            node.isWall = false;
-            this.setState(node);
-        }
+        this.setState({isWall: false})
     }
 
     render() 
